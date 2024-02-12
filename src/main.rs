@@ -7,36 +7,33 @@ use panic_halt as _;
 fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
-    let mut serial = arduino_hal::default_serial!(dp, pins, 57200);
+    let mut serial = arduino_hal::default_serial!(dp, pins, 38400);
 
-    let mut adc = arduino_hal::Adc::new(dp.ADC, Default::default());
-
-    let x = pins.a0.into_analog_input(&mut adc);
-    let y = pins.a1.into_analog_input(&mut adc);
-    let z = pins.a2.into_analog_input(&mut adc);
+    let led = &mut pins.d13.into_output();
 
     loop {
-        let (mut x_raw, mut y_raw, mut z_raw) = (0, 0, 0);
-        for _ in 0..10 {
-            x_raw += x.analog_read(&mut adc);
-            y_raw += y.analog_read(&mut adc);
-            z_raw += z.analog_read(&mut adc);
+        match serial.read_byte() {
+            1u8 => {
+                led.set_low();
+                ufmt::uwrite!(serial, "LED: OFF").unwrap();
+            }
+            2u8 => {
+                led.set_high();
+                arduino_hal::delay_ms(2000);
+                led.set_low();
+                ufmt::uwrite!(serial, "LED: ON").unwrap();
+            }
+            d => {
+                ufmt::uwrite!(serial, "{}", d).unwrap();
+                led.set_high();
+                arduino_hal::delay_ms(250);
+                led.set_low();
+                arduino_hal::delay_ms(250);
+                led.set_high();
+                arduino_hal::delay_ms(250);
+                led.set_low();
+            }
         }
-        x_raw /= 10;
-        y_raw /= 10;
-        z_raw /= 10;
-        ufmt::uwriteln!(
-            &mut serial,
-            "{}, {}, {}",
-            map(x_raw),
-            map(y_raw),
-            map(z_raw)
-        )
-        .unwrap();
         arduino_hal::delay_ms(1000);
     }
-}
-
-fn map(val: u16) -> i16 {
-    (val as i16 - 337) * 100 / 68
 }
