@@ -1,0 +1,3 @@
+[submodule "lcd-lcm1602-i2c"]
+	path = lcd-lcm1602-i2c
+	url = gitabhe:KuabeM/lcd-lcm1602-i2c.git

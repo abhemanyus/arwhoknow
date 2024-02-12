@@ -84,8 +84,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "dht-sensor"
-version = "0.2.1"
-source = "git+https://github.com/michaelbeaumont/dht-sensor.git#ba6627b7f650dd99e9707b290756ab5f6499e41c"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "969ea80f9318ecc47442fb9106f45db41f8a4fb03b2041b1fe2bfd9e714a8164"
 dependencies = [
  "embedded-hal",
 ]
@@ -109,8 +110,6 @@ checksum = "723dce4e9f25b6e6c5f35628e144794e5b459216ed7da97b7c4b66cdb3fa82ca"
 [[package]]
 name = "lcd-lcm1602-i2c"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c123f794fa6f8bfdace880a42e45c24cc996b72b633df7c2a27715b55651095"
 dependencies = [
  "embedded-hal",
  "ufmt 0.1.2",
