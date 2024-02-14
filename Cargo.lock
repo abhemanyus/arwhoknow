@@ -99,6 +99,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "723dce4e9f25b6e6c5f35628e144794e5b459216ed7da97b7c4b66cdb3fa82ca"
 
 [[package]]
+name = "lcd-lcm1602-i2c"
+version = "0.1.0"
+dependencies = [
+ "embedded-hal",
+ "ufmt 0.1.2",
+ "ufmt-write",
+]
+
+[[package]]
 name = "nb"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,6 +170,7 @@ version = "0.1.0"
 dependencies = [
  "arduino-hal",
  "embedded-hal",
+ "lcd-lcm1602-i2c",
  "nb 0.1.3",
  "panic-halt",
  "ufmt 0.2.0",
