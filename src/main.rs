@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(abi_avr_interrupt)]
+#![feature(ascii_char)]
 
 use arduino_hal::spi::SerialClockRate;
 use nrf24l01::NRF24L01;
@@ -14,12 +14,12 @@ fn main() -> ! {
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
     ufmt::uwriteln!(&mut serial, "Hello from Arduino!\r").unwrap();
 
-    let (spi, cns) = arduino_hal::Spi::new(
+    let (spi, cs) = arduino_hal::Spi::new(
         dp.SPI,
-        pins.d13.into_output(),
-        pins.d11.into_output(),
-        pins.d12.into_pull_up_input(),
-        pins.d10.into_output(),
+        pins.d13.into_output(),        // CLOCK
+        pins.d11.into_output(),        // MOSI
+        pins.d12.into_pull_up_input(), // MISO
+        pins.d10.into_output(),        // CS
         arduino_hal::spi::Settings {
             data_order: arduino_hal::spi::DataOrder::MostSignificantFirst,
             clock: SerialClockRate::OscfOver8,
@@ -28,10 +28,12 @@ fn main() -> ! {
     );
 
     let ce = pins.d8.into_output();
-    let mut radio = NRF24L01::new(spi, cns, ce, 1, 4).unwrap();
+    let mut radio = NRF24L01::new(spi, cs, ce, 1, 8).unwrap();
 
-    radio.set_raddr("serv1".as_bytes()).unwrap();
-    radio.set_taddr("serv1".as_bytes()).unwrap();
+    #[cfg(feature = "sender")]
+    radio.set_taddr(&b"serv1"[..]).unwrap();
+    #[cfg(feature = "reciver")]
+    radio.set_raddr(&b"serv1"[..]).unwrap();
 
     radio.config().unwrap();
 
@@ -39,23 +41,19 @@ fn main() -> ! {
     loop {
         #[cfg(feature = "sender")]
         {
-            ufmt::uwriteln!(serial, "sending...").unwrap();
             if !radio.is_sending().unwrap() {
-                radio.send(&"hello world!".as_bytes()[..8]).unwrap();
+                radio.send(&b"hello world!"[..8]).unwrap();
             }
-            arduino_hal::delay_ms(1000);
         }
         #[cfg(feature = "receiver")]
         {
             if radio.data_ready().unwrap() {
-                ufmt::uwriteln!(serial, "receiving...").unwrap();
                 let mut buffer = [0; 8];
                 radio.get_data(&mut buffer).unwrap();
-                for c in buffer {
-                    ufmt::uwrite!(serial, "{} ", c).unwrap();
-                }
+                let msg = unsafe { buffer.as_ascii_unchecked().as_str() };
+                ufmt::uwriteln!(serial, "{}", msg).unwrap();
             }
         }
-        ufmt::uwriteln!(serial, "").unwrap();
+        arduino_hal::delay_ms(1000);
     }
 }
