@@ -31,7 +31,7 @@ fn main() -> ! {
     let mut radio = NRF24L01::new(spi, cns, ce, 1, 4).unwrap();
 
     radio.set_raddr("serv1".as_bytes()).unwrap();
-    radio.set_taddr("clie1".as_bytes()).unwrap();
+    radio.set_taddr("serv1".as_bytes()).unwrap();
 
     radio.config().unwrap();
 
