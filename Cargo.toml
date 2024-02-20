@@ -17,6 +17,7 @@ nb = "0.1.2"
 embedded-hal = "0.2.3"
 avr-device = "0.5.4"
 void = { version = "1.0.2", default-features = false }
+nrf24l01 = { git = "https://github.com/maikelwever/nrf24l01" }
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"
@@ -35,3 +36,7 @@ codegen-units = 1
 debug = true
 lto = true
 opt-level = "s"
+
+[features]
+sender = []
+receiver = []
