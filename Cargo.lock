@@ -170,6 +170,7 @@ name = "spookyaction"
 version = "0.1.0"
 dependencies = [
  "arduino-hal",
+ "avr-device",
  "bitbang-hal",
  "embedded-hal",
  "nb 0.1.3",
