@@ -15,7 +15,8 @@ panic-halt = "0.2.0"
 ufmt = "0.2.0"
 nb = "0.1.2"
 embedded-hal = "0.2.3"
-keypad = "0.2.2"
+bitbang-hal = "0.3.2"
+void = { version = "1.0.2", default-features = false }
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"
