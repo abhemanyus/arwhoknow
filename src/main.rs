@@ -1,9 +1,17 @@
 #![no_std]
 #![no_main]
-#![feature(ascii_char)]
-#![feature(array_methods)]
 
-use nrf24l01::NRF24L01;
+use core::convert::Infallible;
+
+use arduino_hal::{
+    hal::port::{PB0, PB1, PD2, PD3, PD4, PD5, PD6, PD7},
+    port::{
+        mode::{Input, OpenDrain, PullUp},
+        Pin,
+    },
+};
+use embedded_hal::digital::v2::InputPin;
+use keypad::{keypad_new, keypad_struct};
 use panic_halt as _;
 
 #[arduino_hal::entry]
@@ -12,54 +20,63 @@ fn main() -> ! {
     let pins = arduino_hal::pins!(dp);
 
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
-    ufmt::uwriteln!(&mut serial, "Hello from Arduino!\r").unwrap();
 
-    let (spi, cs) = arduino_hal::Spi::new(
-        dp.SPI,
-        pins.d13.into_output(),        // CLOCK
-        pins.d11.into_output(),        // MOSI
-        pins.d12.into_pull_up_input(), // MISO
-        pins.d10.into_output(),        // CS
-        arduino_hal::spi::Settings {
-            data_order: arduino_hal::spi::DataOrder::MostSignificantFirst,
-            clock: arduino_hal::spi::SerialClockRate::OscfOver8,
-            mode: nrf24l01::MODE,
-        },
-    );
+    let keypad = keypad_new!(Keypad {
+        rows: (
+            pins.d9.into_pull_up_input(),
+            pins.d8.into_pull_up_input(),
+            pins.d7.into_pull_up_input(),
+            pins.d6.into_pull_up_input()
+        ),
+        columns: (
+            pins.d5.into_opendrain(),
+            pins.d4.into_opendrain(),
+            pins.d3.into_opendrain(),
+            pins.d2.into_opendrain(),
+        ),
+    });
 
-    let ce = pins.d8.into_output();
-    let mut radio = NRF24L01::new(spi, cs, ce, 1, 16).unwrap();
+    let keys = keypad.decompose();
 
-    #[cfg(feature = "sender")]
-    radio.set_taddr(&b"serv1"[..]).unwrap();
-    #[cfg(feature = "reciver")]
-    radio.set_raddr(&b"serv1"[..]).unwrap();
+    ufmt::uwriteln!(&mut serial, "Hello from Arduino!").unwrap();
 
-    radio.config().unwrap();
-
-    ufmt::uwriteln!(serial, "radio acquired, great success!").unwrap();
+    let mut last_key = 17;
+    let mut pressed = true;
     loop {
-        #[cfg(feature = "sender")]
-        {
-            if !radio.is_sending().unwrap() {
-                let mut buffer = [b' '; 16];
-                for i in 0..buffer.len() {
-                    buffer[i] = serial.read_byte();
-                    if buffer[i] == b'\n' {
-                        break;
-                    }
+        pressed = false;
+        for (index, key) in keys.iter().flatten().enumerate() {
+            if key.is_low().unwrap() {
+                pressed = true;
+                if last_key != index {
+                    ufmt::uwriteln!(serial, "{}", KEY_MAP[index]).unwrap();
                 }
-                radio.send(&buffer).unwrap();
+                last_key = index;
             }
         }
-        #[cfg(feature = "receiver")]
-        {
-            if radio.data_ready().unwrap() {
-                let mut buffer = [0u8; 16];
-                radio.get_data(&mut buffer).unwrap();
-                let msg = unsafe { buffer.as_ascii_unchecked().as_str() };
-                ufmt::uwrite!(serial, "{}", msg).unwrap();
-            }
+        if pressed == false {
+            last_key = 17;
         }
+        arduino_hal::delay_ms(100);
+    }
+}
+
+const KEY_MAP: [char; 16] = [
+    '1', '2', '3', 'A', '7', '8', '9', 'C', '4', '5', '6', 'B', '*', '0', '#', 'D',
+];
+
+keypad_struct! {
+    pub struct Keypad<Error = Infallible> {
+        rows: (
+            Pin<Input<PullUp>, PB1>,
+            Pin<Input<PullUp>, PB0>,
+            Pin<Input<PullUp>, PD7>,
+            Pin<Input<PullUp>, PD6>,
+        ),
+        columns: (
+            Pin<OpenDrain, PD5>,
+            Pin<OpenDrain, PD4>,
+            Pin<OpenDrain, PD3>,
+            Pin<OpenDrain, PD2>,
+        ),
     }
 }
