@@ -15,8 +15,8 @@ fn main() -> ! {
 
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
-    let tx = pins.d7.into_output();
-    let rx = pins.d8.into_floating_input();
+    let tx = pins.d8.into_output();
+    let rx = pins.d7.into_floating_input();
 
     let tmr = Timer::new(dp.TC1, 9600);
 
