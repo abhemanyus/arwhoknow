@@ -65,7 +65,7 @@ impl Timer {
     fn new(timer: arduino_hal::pac::TC1, target_hz: u32) -> Self {
         use arduino_hal::clock::Clock;
         const ARDUINO_UNO_CLOCK_FREQUENCY_HZ: u32 = arduino_hal::DefaultClock::FREQ;
-        const CLOCK_SOURCE: CS1_A = CS1_A::PRESCALE_256;
+        const CLOCK_SOURCE: CS1_A = CS1_A::DIRECT;
         let clock_divisor: u32 = match CLOCK_SOURCE {
             CS1_A::DIRECT => 1,
             CS1_A::PRESCALE_8 => 8,
