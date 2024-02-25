@@ -23,7 +23,7 @@ fn main() -> ! {
     let tx = pins.d8.into_output();
     let rx = pins.d7.into_floating_input();
 
-    let tmr = Timer::new(dp.TC1, 4800);
+    let tmr = Timer::new(dp.TC1, 9600);
 
     let mut software_serial = bitbang_hal::serial::Serial::new(tx, rx, tmr);
 
