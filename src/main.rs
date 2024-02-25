@@ -1,8 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(abi_avr_interrupt)]
-
-use core::sync::atomic::{AtomicBool, Ordering};
 
 use arduino_hal::pac::tc1::tccr1b::CS1_A;
 use embedded_hal::{
@@ -10,8 +7,6 @@ use embedded_hal::{
     timer::{CountDown, Periodic},
 };
 use panic_halt as _;
-
-static SAMPLE_NOW: AtomicBool = AtomicBool::new(false);
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -27,15 +22,9 @@ fn main() -> ! {
 
     let mut software_serial = bitbang_hal::serial::Serial::new(tx, rx, tmr);
 
-    unsafe {
-        avr_device::interrupt::enable();
-    }
-
     loop {
-        // ufmt::uwriteln!(serial, "hello!").unwrap();
         let word = software_serial.read().unwrap();
-        serial.write_byte(word);
-        // tmr.wait().unwrap();
+        serial.write_byte(word.reverse_bits());
     }
 }
 
@@ -49,8 +38,8 @@ impl CountDown for Timer {
     }
 
     fn wait(&mut self) -> nb::Result<(), void::Void> {
-        while !SAMPLE_NOW.load(Ordering::SeqCst) {}
-        SAMPLE_NOW.store(false, Ordering::SeqCst);
+        self.timer.tcnt1.write(|w| w.bits(0b00));
+        while self.timer.tcnt1.read().bits() < self.ticks {}
         Ok(())
     }
 }
@@ -59,6 +48,7 @@ impl Periodic for Timer {}
 
 struct Timer {
     timer: arduino_hal::pac::TC1,
+    ticks: u16,
 }
 
 impl Timer {
@@ -75,24 +65,11 @@ impl Timer {
             CS1_A::NO_CLOCK | CS1_A::EXT_FALLING | CS1_A::EXT_RISING => 1,
         };
         let ticks = calc_overflow(ARDUINO_UNO_CLOCK_FREQUENCY_HZ, target_hz, clock_divisor) as u16;
-        timer.tccr1a.write(|w| w.wgm1().bits(0b00));
-        timer.tccr1b.write(|w| {
-            w.cs1()
-                //.prescale_256()
-                .variant(CLOCK_SOURCE)
-                .wgm1()
-                .bits(0b01)
-        });
-        timer.ocr1a.write(|w| w.bits(ticks));
-        timer.timsk1.write(|w| w.ocie1a().set_bit());
-        Self { timer }
+        timer.tccr1b.write(|w| w.cs1().direct());
+        Self { timer, ticks }
     }
 }
 
-#[avr_device::interrupt(atmega328p)]
-fn TIMER1_COMPA() {
-    SAMPLE_NOW.store(true, Ordering::SeqCst);
-}
 const fn calc_overflow(clock_hz: u32, target_hz: u32, prescale: u32) -> u32 {
     clock_hz / target_hz / prescale - 1
 }
